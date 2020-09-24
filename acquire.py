@@ -10,6 +10,22 @@ def get_connection(db, user=env.user, host=env.host, password=env.password):
     return f'mysql+pymysql://{user}:{password}@{host}/{db}'
 
 
+def get_mall_customer_data():
+    '''
+    This funtion reads in the mall customer data from the Codeup db into
+    a df, writes it to a csv file, and returns the df.
+    '''
+    sql_query = "SELECT * FROM customers;"
+    file = 'mall_customers.csv'
+    
+    if os.path.isfile(file):
+        return pd.read_csv('mall_customers.csv')
+    else:
+        df = pd.read_sql(sql_query, get_connection('mall_customers'))
+        df.to_csv('mall_customers.csv')
+        return df
+
+
 def get_titanic_data():
     '''
     Returns the titanic dataset.
