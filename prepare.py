@@ -68,3 +68,16 @@ def prep_titanic(df=get_titanic_data()):
                     encoded_sex], axis=1)
 
     return df
+
+
+def prep_mall_data(df):
+    '''
+    This function accepts the mall customers dataframe, and adds
+    an encoded column for gender. Returns train, validate, and test
+    data for EDA and Modeling
+    '''
+    df['is_female'] = (df.gender == 'Female').astype('int')
+    train_validate, test = train_test_split(df, test_size=.15)
+    train, validate = train_test_split(train_validate, test_size=.15)
+    return train, validate, test
+
