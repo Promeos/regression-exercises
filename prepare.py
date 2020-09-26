@@ -70,14 +70,32 @@ def prep_titanic(df=get_titanic_data()):
     return df
 
 
-def prep_mall_data(df):
+def prep_mall_data(df, modeling=False):
     '''
     This function accepts the mall customers dataframe, and adds
-    an encoded column for gender. Returns train, validate, and test
-    data for EDA and Modeling
+    an encoded column for gender. Optional argument 'modeling' to split data.
+    Returns either a dataframe or train, validate, and test data for EDA and Modeling
+    
+    Drop: customer_id and gender before you split the data for machine
+    learning. The algos like numbers, not strings.
     '''
     df['is_female'] = (df.gender == 'Female').astype('int')
-    train_validate, test = train_test_split(df, test_size=.15)
-    train, validate = train_test_split(train_validate, test_size=.15)
-    return train, validate, test
+    
+    df = df[[
+    'customer_id',
+    'gender',
+    'is_female',
+    'age',
+    'annual_income',
+    'spending_score'
+    ]]
+    
+    if modeling == False:
+        return df
+    elif modeling == True:
+        train_validate, test = train_test_split(df, test_size=.15)
+        train, validate = train_test_split(train_validate, test_size=.15)
+        return train, validate, test
+    else:
+        return None
 
