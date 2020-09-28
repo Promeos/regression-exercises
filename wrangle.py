@@ -1,6 +1,6 @@
 import pandas as pd
 from acquire import get_telco_data
-
+from sklearn.model_selection import train_test_split
 
 def wrangle_telco():
     '''
@@ -14,6 +14,16 @@ def wrangle_telco():
     df['total_charges'] = df.total_charges.astype('float')
     df = df[['customer_id', 'tenure', 'monthly_charges', 'total_charges']]
 
-    return df
+    train, validate, test = split_data(df)
+    return train, validate, test
+
+def split_data(df):
+    '''
+    Accepts the telco_churn dataset.
+    Returns the telco_churn split into train, validate, and test sets.
+    '''
+    train_validate, test = train_test_split(df, test_size=.15)
+    train, validate = train_test_split(train_validate, test_size=.15)
+    return train, validate, test
 
 
