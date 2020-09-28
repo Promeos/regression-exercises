@@ -3,33 +3,34 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler, QuantileTransformer, PowerTransformer, MinMaxScaler, RobustScaler
 
 
-def data_split(df, test_pct=0.25, scaled=False, scaler_method='standard'):
+def split_my_data(df, train_pct=0.75, scaled=False, scaler_method='standard'):
     '''
     Accepts prepared telco_churn DataFrame
     
-    Multiple Return Options:
+    Returns
     1. If scaled=False: returns train and test sets
     2. If scaled=True: returns scaler object, scaled train set, scaled test set
     
     Parameters
     ----------
-    df: pandas DataFrame
+    df : pandas DataFrame
         Accepts the prepared telco_churn DataFrame from wrangle_telco()
 
-    test_pct: float, 0.25 by default
-        The portion of data that will be in the test set.
+    train_pct : float, 0.75 by default
+        The portion of data that will be in the train set.
         Value must be between 0 and 1.
         
     scaled : boolean, optional, default is False
-        If False, returns data split into train and test sets.
-        If True, returns a scaler, scaled training set, and scaled test set
+        If False: returns data split into train and test sets.
+        If True: returns a scaler, scaled training set, and scaled test set
         
     scaler_method : str, optional, default is "standard"
-        Scaler object that is used to scale numeric data
-        scaler objects
+        Scaler object that is used to scale numeric data.
+        
+        acceptable strings:
         "standard", "inverse", "uniform", "normal", "minmax", "iqrobust"
         
-        Scalers objects
+        Scalers Objects
         ---------------
         "standard" returns StandardScaler()
         "uniform"  returns QuantileTransformer()
@@ -42,7 +43,7 @@ def data_split(df, test_pct=0.25, scaled=False, scaler_method='standard'):
     https://scikit-learn.org/stable/modules/preprocessing.html
         
     '''
-    train, test = train_test_split(df, test_size=test_pct, random_state=369)
+    train, test = train_test_split(df, train_size=train_pct, random_state=369)
 
     if scaled == False:
         return train, test
@@ -54,16 +55,20 @@ def data_split(df, test_pct=0.25, scaled=False, scaler_method='standard'):
         return None
 
 
-def preprocessing_scaler(scaler_method, gaussian_transformer='yeo-johnson',random=369):
+def preprocessing_scaler(scaler_method, gaussian_transformer='yeo-johnson', random=369):
     '''
-    This function accepts a string and returns a data preprocessing object
+    This function accepts the name of a scaler object (listed below)
+    Returns a data preprocessing object
 
-    scaler_method : str, optional, default is 'standard'
-        Scaler object that is used to scale numeric data
-        scaler objects
-        'standard', 'inverse', 'uniform', 'normal', 'minmax', 'iqrobust'
+    Parameters
+    ----------
+    scaler_method : str
+        Scaler object that is used to scale numeric data.
         
-        Scaler objects
+        acceptable strings:
+        "standard", "inverse", "uniform", "normal", "minmax", "iqrobust"
+        
+        Scaler Objects
         --------------
         'standard' returns StandardScaler()
         'uniform'  returns QuantileTransformer()
@@ -71,20 +76,50 @@ def preprocessing_scaler(scaler_method, gaussian_transformer='yeo-johnson',rando
         'minmax'   returns MinMaxScaler()
         'iqrobust' returns RobustScaler()
         
+    gaussian_transformer : str, optional, default is "yeo-johnson"
+        gaussian transformer passed as a argument to PowerTransformer()
+        
+        If scaler_method = 'standard' and,
+        gaussian_transformer = "yeo-johnson": returns data scaled using the "yeo-johnson" method
+        gaussian_transformer = "box-cox": returns data scaled using the "box-cox" method
+    
+    random : int, optional, default 369
+        The random seed set for QuantileTransformer()
+    
     Notes
     -----
     https://scikit-learn.org/stable/modules/preprocessing.html
     '''
     if scaler_method == 'standard':
-        scaler = StandardScaler(copy=True, with_mean=True, with_std=True)
+        scaler = StandardScaler(copy=True,
+                                with_mean=True,
+                                with_std=True
+                               )
+        
     elif scaler_method == 'uniform':
-        scaler = QuantileTransformer(n_quantiles=100, output_distribution='uniform', random_state=random, copy=True)
+        scaler = QuantileTransformer(n_quantiles=100,
+                                     output_distribution='uniform',
+                                     random_state=random,
+                                     copy=True
+                                    )
+        
     elif scaler_method == 'normal':
-        scaler = PowerTransformer(method=gaussian_transformer, standardize=False, copy=True)
+        scaler = PowerTransformer(method=gaussian_transformer,
+                                  standardize=False, 
+                                  copy=True
+                                 )
+        
     elif scaler_method == 'minmax':
-        scaler = MinMaxScaler(copy=True, feature_range=(0,1))
+        scaler = MinMaxScaler(copy=True,
+                              feature_range=(0,1)
+                             )
+        
     elif scaler_method == 'iqrobust':
-        scaler = RobustScaler(quantile_range=(25.0,75.0), copy=True, with_centering=True, with_scaling=True)
+        scaler = RobustScaler(quantile_range=(25.0,75.0),
+                              copy=True,
+                              with_centering=True,
+                              with_scaling=True
+                             )
     else:
         return None
     
@@ -102,11 +137,11 @@ def scale_data(scaler, train, test):
     scaled_test = scaler.transform(test)
     
     df_scaled_train = pd.DataFrame(scaled_train,
-                                columns=train.columns.values
-                                ).set_index([train.index.values])
+                                   columns=train.columns.values
+                                  ).set_index([train.index.values])
     
     df_scaled_test = pd.DataFrame(scaled_test,
-                                 columns=test.columns.values
+                                  columns=test.columns.values
                                  ).set_index([test.index.values])
     
     return scaler, df_scaled_train, df_scaled_test
@@ -121,11 +156,11 @@ def scale_inverse(scaler, scaled_train, scaled_test):
     test_inverse = scaler.inverse_transform(scaled_test)
     
     train = pd.DataFrame(train_inverse,
-                        columns=scaled_train.columns.values
+                         columns=scaled_train.columns.values
                         ).set_index([scaled_train.index.values])
     
     test = pd.DataFrame(test_inverse,
                         columns=scaled_test.columns.values
-                        ).set_index([scaled_test.index.values])
+                       ).set_index([scaled_test.index.values])
     
     return scaler, train, test
