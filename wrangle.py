@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 from acquire import get_telco_data
 from sklearn.model_selection import train_test_split
@@ -27,3 +28,9 @@ def split_data(df):
     return train, validate, test
 
 
+def wrangle_grades():
+    grades = pd.read_csv("student_grades.csv")
+    grades.drop(columns="student_id", inplace=True)
+    grades.replace(r"^\s*$", np.nan, regex=True, inplace=True)
+    df = grades.dropna().astype("int")
+    return df
