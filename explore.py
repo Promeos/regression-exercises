@@ -33,7 +33,35 @@ def months_to_years(df):
              'total_charges'
     ]]
     return df
+
+
+def monthly_charges_cohorts(df):
     
-def plot_categorical_and_continuous_vars(categorical_var, continuous_var, df):
-    pass
-    # return 3 different plots for a categorical variable with a continuous variable
+        df['monthly_charges_cohorts'] = pd.cut(df.monthly_charges,
+                                               bins=[18, 38, 58, 78, 98, 118, 138]
+                                              )
+        return df
+    
+      
+def plot_categorical_and_continuous_cars(categorical_var, continuous_var, df):
+    '''
+    Accepts
+    Returns
+    '''
+    sns.boxplot(data=df,
+                x=categorical_var,
+                y=continuous_var
+               )
+    plt.show()
+    
+    sns.swarmplot(data=df,
+                  x=categorical_var,
+                  y=continuous_var
+                 )
+    plt.show()
+    
+    sns.violinplot(data=df,
+                x=categorical_var,
+                y=continuous_var
+                  )
+    plt.show()
