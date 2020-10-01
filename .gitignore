@@ -4,3 +4,4 @@ env.py
 __pycache__/
 data_wrangling_notes.py
 *.csv
+student/
