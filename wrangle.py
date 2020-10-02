@@ -23,8 +23,8 @@ def split_data(df):
     Accepts the telco_churn dataset.
     Returns the telco_churn split into train, validate, and test sets.
     '''
-    train_validate, test = train_test_split(df, test_size=.15)
-    train, validate = train_test_split(train_validate, test_size=.15)
+    train_validate, test = train_test_split(df, test_size=.20)
+    train, validate = train_test_split(train_validate, test_size=.20)
     return train, validate, test
 
 
