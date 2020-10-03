@@ -9,31 +9,69 @@ from sklearn.linear_model import LinearRegression
 from sklearn.feature_selection import SelectKBest, f_regression, RFE
 
 
-def prep_data(df, modeling=False):
+def wrangle_data(df, target_name, modeling=False):
     '''
     Signature: prep_data(df, modeling=False)
     Docstring:
+    This function accepts any dataframe and splits it into train, validate,
+    and test sets for EDA or modeling.
 
     Parameters
     ----------
+    df : pandas.core.frame.DataFrame
+    
+    target_name : str
+        target_name is the column name of the target variable
+    
+    modeling : boolean, False by default
+        `modeling` parameter scales numeric data to use in machine learning models.
+        
+        If modeling is False: The function returns unscaled X_set and y_set dataframes
+        If modeling is True: The function returns scaled X_set and y_set dataframes
 
     Returns
     -------
-
+    X_train, y_train, X_validate, y_validate, X_test, y_test
     '''
+    # Create dummy variables for object dtypes
+    # Original object dtype columns are dropped
+    df = add_encoded_columns(df, drop_encoders=True)
+    
+    # After columns are coded, this function accepts a cleaned and encoded
+    # dataframe and returns train, validate, and test sets
+    train, validate, test = train_test_split(df)
+    
+    # Split the train, validate, and test sets into 3 X_set and y_set
+    X_train, y_train = attributes_target_split(train, target_name=target_name)
+    X_validate, y_validate = attributes_target_split(validate, target_name=target_name)
+    X_test, y_test = attributes_target_split(test, target_name=target_name)
+    
+    # If modeling is True
+    if modeling:
+        # Each data X_set is scaled
+        X_train, X_validate, X_test = add_scaled_columns(X_train, X_validate, X_test,
+                                                         scaler=MinMaxScaler())
+        return X_train, y_train, X_validate, y_validate, X_test, y_test
+    
+    else:
+        return X_train, y_train, X_validate, y_validate, X_test, y_test
 
 
 def add_encoded_columns(df, drop_encoders=True):
     '''
     Signature: add_encoded_columns(df, drop_encoders=True)
     Docstring:
-
+    This function accepts a DataFrame, creates encoded columns for object dtypes,
+    and returns a DataFrame with or without object dtype columns.
+    
     Parameters
     ----------
-
+    df : pandas.core.frame.DataFrame
+    
+    
     Returns
     -------
-
+    f, encoded_columns
     '''
     columns_to_encode = df.select_dtypes('O').columns.to_list()
     encoded_columns = pd.get_dummies(df[columns_to_encode], drop_first=True, dummy_na=False)
@@ -47,77 +85,83 @@ def add_encoded_columns(df, drop_encoders=True):
         return df, encoded_columns
 
 
-def split_data(df):
+def train_validate_test(df):
     '''
-    Signature: split_data(df)
+    Signature: train_validate_test(df)
     Docstring:
 
     Parameters
     ----------
+    pandas.core.frame.DataFrame
+
 
     Returns
     -------
-
+    train, validate, test
     '''
     train_validate, test = train_test_split(df, test_size=.20, random_state=369)
     train, validate = train_test_split(train_validate, test_size=.20, random_state=369)
     return train, validate, test
 
 
-def attributes_target_split(df, target):
+def attributes_target_split(data_set, target_name=''):
     '''
     Signature: attributes_target_split(df, target)
     Docstring:
 
     Parameters
     ----------
+    pandas.core.frame.DataFrame
+
 
     Returns
     -------
 
     '''
-    x = df.drop(columns=target)
-    y = df[target]
+    x = data_set.drop(columns=target_name)
+    y = data_set[target_name]
     return x, y
 
 
-def add_scaled_columns(train, validate, test, scaler):
+def add_scaled_columns(X_train, X_validate, X_test, scaler=MinMaxScaler()):
     '''
     Signature: add_scaled_columns(train, validate, test, scaler)
     Docstring:
 
     Parameters
     ----------
+    pandas.core.frame.DataFrame
+
 
     Returns
     -------
-
+    X_train, X_validate, X_test
     '''
-    columns_to_scale = train.columns.to_list()
+    columns_to_scale = X_train.columns.to_list()
     new_column_names = [c + '_scaled' for c in columns_to_scale]
-    scaler.fit(train[columns_to_scale])
+    scaler.fit(X_train[columns_to_scale])
 
-    train = pd.concat([
-        train,
-        pd.DataFrame(scaler.transform(train[columns_to_scale]),
+    X_train = pd.concat([
+        X_train,
+        pd.DataFrame(scaler.transform(X_train[columns_to_scale]),
                      columns=new_column_names,
-                     index=train.index
+                     index=X_train.index
                      )],axis=1)
     
-    validate = pd.concat([
-        validate,
-        pd.DataFrame(scaler.transform(validate[columns_to_scale]),
+    X_validate = pd.concat([
+        X_validate,
+        pd.DataFrame(scaler.transform(X_validate[columns_to_scale]),
                      columns=new_column_names,
-                     index=validate.index
+                     index=X_validate.index
                      )], axis=1)
     
-    test = pd.concat([
-        test,
-        pd.DataFrame(scaler.transform(test[columns_to_scale]),
+    X_test = pd.concat([
+        X_test,
+        pd.DataFrame(scaler.transform(X_test[columns_to_scale]),
                      columns=new_column_names,
-                     index=test.index
+                     index=X_test.index
                      )], axis=1)
-    return train, validate, test
+    return X_train, X_validate, X_test
 
 
 def features_for_modeling(predictors, target, k_features):
@@ -146,6 +190,7 @@ def select_kbest(predictors, target, k_features=3):
 
     Parameters
     ----------
+    pandas.core.frame.DataFrame
 
     Returns
     -------
@@ -169,6 +214,7 @@ def rfe(predictors, target, k_features=3):
 
     Parameters
     ----------
+    pandas.core.frame.DataFrame
 
     Returns
     -------
