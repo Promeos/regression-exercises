@@ -98,23 +98,3 @@ def prep_mall_data(df, modeling=False):
         return train, validate, test
     else:
         return None
-
-
-def add_scaled_columns(train, validate, test, scaler, columns_to_scale):
-    new_column_names = [c + '_scaled' for c in columns_to_scale]
-    scaler.fit(train[columns_to_scale])
-
-    train = pd.concat([
-        train,
-        pd.DataFrame(scaler.transform(train[columns_to_scale]), columns=new_column_names, index=train.index),
-    ], axis=1)
-    validate = pd.concat([
-        validate,
-        pd.DataFrame(scaler.transform(validate[columns_to_scale]), columns=new_column_names, index=validate.index),
-    ], axis=1)
-    test = pd.concat([
-        test,
-        pd.DataFrame(scaler.transform(test[columns_to_scale]), columns=new_column_names, index=test.index),
-    ], axis=1)
-    
-    return train, validate, test
