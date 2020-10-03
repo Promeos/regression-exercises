@@ -39,7 +39,7 @@ def wrangle_data(df, target_name, modeling=False):
     
     # After columns are coded, this function accepts a cleaned and encoded
     # dataframe and returns train, validate, and test sets
-    train, validate, test = train_test_split(df)
+    train, validate, test = train_validate_test(df)
     
     # Split the train, validate, and test sets into 3 X_set and y_set
     X_train, y_train = attributes_target_split(train, target_name=target_name)
@@ -51,10 +51,8 @@ def wrangle_data(df, target_name, modeling=False):
         # Each data X_set is scaled
         X_train, X_validate, X_test = add_scaled_columns(X_train, X_validate, X_test,
                                                          scaler=MinMaxScaler())
-        return X_train, y_train, X_validate, y_validate, X_test, y_test
     
-    else:
-        return X_train, y_train, X_validate, y_validate, X_test, y_test
+    return X_train, y_train, X_validate, y_validate, X_test, y_test
 
 
 def add_encoded_columns(df, drop_encoders=True):
@@ -73,6 +71,9 @@ def add_encoded_columns(df, drop_encoders=True):
     -------
     f, encoded_columns
     '''
+    if df.select_dtypes('O').columns.to_list() == []:
+        return df
+    
     columns_to_encode = df.select_dtypes('O').columns.to_list()
     encoded_columns = pd.get_dummies(df[columns_to_encode], drop_first=True, dummy_na=False)
 
@@ -137,30 +138,42 @@ def add_scaled_columns(X_train, X_validate, X_test, scaler=MinMaxScaler()):
     -------
     X_train, X_validate, X_test
     '''
-    columns_to_scale = X_train.columns.to_list()
+    columns_to_scale = X_train.select_dtypes(exclude='uint8').columns.to_list()
     new_column_names = [c + '_scaled' for c in columns_to_scale]
     scaler.fit(X_train[columns_to_scale])
 
-    X_train = pd.concat([
-        X_train,
-        pd.DataFrame(scaler.transform(X_train[columns_to_scale]),
-                     columns=new_column_names,
-                     index=X_train.index
-                     )],axis=1)
+    # scale columns in train, validate and test sets
+    X_train_scaled = scaler.transform(X_train[columns_to_scale])
+    X_validate_scaled = scaler.transform(X_validate[columns_to_scale])
+    X_test_scaled = scaler.transform(X_test[columns_to_scale])
     
-    X_validate = pd.concat([
-        X_validate,
-        pd.DataFrame(scaler.transform(X_validate[columns_to_scale]),
-                     columns=new_column_names,
-                     index=X_validate.index
-                     )], axis=1)
+    # drop columns that are now scaled
+    X_train.drop(columns=columns_to_scale, inplace=True)
+    X_validate.drop(columns=columns_to_scale, inplace=True)
+    X_test.drop(columns=columns_to_scale, inplace=True)
     
-    X_test = pd.concat([
-        X_test,
-        pd.DataFrame(scaler.transform(X_test[columns_to_scale]),
-                     columns=new_column_names,
-                     index=X_test.index
-                     )], axis=1)
+    # concatenate scaled columns with the original train/validate/test sets
+    X_train = pd.concat([X_train,
+                         pd.DataFrame(X_train_scaled,
+                         columns=new_column_names,
+                         index=X_train.index.values
+                                     )],
+                        axis=1)
+    
+    X_validate = pd.concat([X_validate,
+                            pd.DataFrame(X_validate_scaled,
+                                         columns=new_column_names,
+                                         index=X_validate.index.values
+                                        )],
+                           axis=1)
+    
+    X_test = pd.concat([X_test,
+                        pd.DataFrame(X_test_scaled,
+                                     columns=new_column_names,
+                                     index=X_test.index.values
+                                     )],
+                       axis=1)
+    
     return X_train, X_validate, X_test
 
 
@@ -202,7 +215,7 @@ def select_kbest(predictors, target, k_features=3):
     f_mask = f_selector.get_support()
     f_features = predictors.iloc[:,f_mask].columns.to_list()
     
-    print(f"Select K Best returned {len(f_features)} features")
+    print(f"Select K Best: {len(f_features)} features")
     print(f_features)
     return predictors[f_features]
     
@@ -221,11 +234,13 @@ def rfe(predictors, target, k_features=3):
 
     '''
     lm = LinearRegression()
-    rfe = RFE(lm, k_features)
+    rfe_init = RFE(lm, k_features)
+    
+    X_rfe = rfe_init.fit_transform(predictors, target)
 
-    rfe_mask = rfe.support_    
+    rfe_mask = rfe_init.support_    
     rfe_features = predictors.iloc[:, rfe_mask].columns.to_list()
 
     print(f"Recursive Feature Elimination: {len(rfe_features)} features")
     print(rfe_features)
-    return(predictors[rfe_features])
+    return predictors[rfe_features]
