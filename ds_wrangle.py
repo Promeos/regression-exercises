@@ -220,7 +220,7 @@ def select_kbest(predictors, target, k_features=3):
     return predictors[f_features]
     
     
-def rfe(predictors, target, k_features=3):
+def select_rfe(X, y, k_features=3):
     '''
     Signature: rfe(predictors, target, k_features=3)
     Docstring:
@@ -236,11 +236,11 @@ def rfe(predictors, target, k_features=3):
     lm = LinearRegression()
     rfe_init = RFE(lm, k_features)
     
-    X_rfe = rfe_init.fit_transform(predictors, target)
+    X_rfe = rfe_init.fit(X, y)
 
     rfe_mask = rfe_init.support_    
-    rfe_features = predictors.iloc[:, rfe_mask].columns.to_list()
+    rfe_features = X.iloc[:, rfe_mask].columns.to_list()
 
     print(f"Recursive Feature Elimination: {len(rfe_features)} features")
     print(rfe_features)
-    return predictors[rfe_features]
+    return X[rfe_features]
